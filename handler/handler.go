@@ -3,17 +3,22 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/cnosuke/imagine/config"
+	"github.com/cnosuke/imagine/s3handler"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 type Handler struct {
-	router *mux.Router
-	context context.Context
-	chain        alice.Chain
+	router   *mux.Router
+	context  context.Context
+	chain    alice.Chain
+	s3       *s3handler.S3Handler
+	corsHost string
 }
 
 type ErrorResponse struct {
@@ -21,14 +26,20 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-const (
-	PathPrefix = "/api"
-)
+func NewHandler(ctx context.Context, conf *config.Config) *Handler {
+	r := mux.NewRouter()
 
-func NewHandler(ctx context.Context) *Handler {
 	h := &Handler{
-		context: ctx,
-		router: mux.NewRouter().PathPrefix(PathPrefix).Subrouter(),
+		context:  ctx,
+		router:   r,
+		corsHost: conf.CorsHost,
+		s3: s3handler.NewS3Handler(
+			ctx,
+			conf.AwsRegion,
+			conf.BucketName,
+			conf.KeyPrefix,
+			conf.DefaultPresignedTTL,
+		),
 	}
 
 	h.setChain(
@@ -38,6 +49,17 @@ func NewHandler(ctx context.Context) *Handler {
 	)
 
 	return h
+}
+
+func (h *Handler) Routing() *mux.Router {
+	h.apiRouting()
+	h.staticRouting()
+
+	return h.router
+}
+
+func (h *Handler) staticRouting() {
+	h.router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
 }
 
 func (h *Handler) setChain(chain alice.Chain) {
@@ -62,17 +84,36 @@ func appLoggingMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 }
 
 type _handler struct {
-	h func(*http.Request) (int, interface{}, error)
+	h           func(*http.Request) (int, interface{}, error)
+	withHeaders func(*http.Request) (int, interface{}, map[string]string, error)
 }
 
 func (h _handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	status, res, err := h.h(r)
+	var (
+		status  int
+		res     interface{}
+		err     error
+		headers map[string]string
+	)
+
+	if h.withHeaders != nil {
+		status, res, headers, err = h.withHeaders(r)
+	} else {
+		status, res, err = h.h(r)
+	}
+
 	if err != nil {
 		zap.S().Infof("error: %s", err)
 		w.WriteHeader(status)
 		encoder.Encode(res)
 		return
+	}
+
+	if headers != nil {
+		for k, v := range headers {
+			w.Header().Set(k, v)
+		}
 	}
 	w.WriteHeader(status)
 

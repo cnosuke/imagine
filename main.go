@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/k0kubun/pp"
+
+	"github.com/cnosuke/imagine/config"
 	"github.com/cnosuke/imagine/handler"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
 )
 
 var (
@@ -43,7 +47,8 @@ func main() {
 	app.Usage = Usage
 
 	var (
-		binding string
+		binding    string
+		configPath string
 	)
 
 	app.Flags = []cli.Flag{
@@ -53,16 +58,31 @@ func main() {
 			Value:       "127.0.0.1:8888",
 			Destination: &binding,
 		},
+		cli.StringFlag{
+			Name:        "config, c",
+			Usage:       "Path to config file",
+			Value:       "",
+			Destination: &configPath,
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "revision", Revision)
-		h := handler.NewHandler(ctx)
+
+		conf, err := config.NewConfig(configPath)
+
+		if err != nil {
+			pp.Println(err)
+			return err
+		}
+
+		h := handler.NewHandler(ctx, conf)
 
 		zap.S().Infow("Init imagine",
 			"revision", Revision,
 			"binding", binding,
+			"conf", conf,
 		)
 
 		if err := http.ListenAndServe(binding, h.Routing()); err != nil {
