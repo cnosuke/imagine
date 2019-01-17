@@ -2,6 +2,7 @@ package s3handler
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -47,6 +48,7 @@ func (s *S3Handler) CreatePresignedPostUrlWithTTL(filename string, contentType s
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		ContentType: aws.String(contentType),
+		ACL:         aws.String("public-read"),
 	})
 
 	str, err := req.Presign(ttl)
@@ -55,11 +57,16 @@ func (s *S3Handler) CreatePresignedPostUrlWithTTL(filename string, contentType s
 	}
 
 	return &entity.PresignedPostUrl{
-		Url:         str,
-		Ttl:         ttl,
-		Key:         key,
-		Id:          id,
-		Filename:    filename,
-		ContentType: contentType,
+		Url:               str,
+		Ttl:               ttl,
+		Key:               key,
+		Id:                id,
+		Filename:          filename,
+		ContentType:       contentType,
+		PublicDownloadUrl: s.CreatePublicACLDownloadURL(key),
 	}, nil
+}
+
+func (s *S3Handler) CreatePublicACLDownloadURL(key string) string {
+	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.bucket, key)
 }

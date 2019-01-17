@@ -105,7 +105,10 @@ export default class extends Vue {
             e.percent = Math.round((e.loaded * 100) / e.total);
             req.onProgress(e);
           },
-          headers: { "Content-Type": res.data.content_type },
+          headers: {
+            "Content-Type": res.data.content_type,
+            "x-amz-acl": "public-read",
+          },
         };
 
         axios
@@ -114,7 +117,7 @@ export default class extends Vue {
             this.doneList.push({
               filename: res.data.filename as string,
               s3Key: res.data.key as string,
-              url: this.buildDownloadUrl(res.data.key as string),
+              url: res.data.public_download_url as string,
             });
 
             req.onSuccess(res0);
