@@ -39,7 +39,7 @@ func (s *S3Handler) CreatePresignedPostUrl(filename string, contentType string) 
 }
 
 func (s *S3Handler) CreatePresignedPostUrlWithTTL(filename string, contentType string, ttl time.Duration) (*entity.PresignedPostUrl, error) {
-	id := uuid.Must(uuid.NewV4()).String()
+	id := uuid.NewV4().String()
 
 	key := filepath.Join(s.keyPrefix, id, filename)
 

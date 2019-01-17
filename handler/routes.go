@@ -16,22 +16,28 @@ type route struct {
 const APIPrefix = "/api/v1"
 
 func (h *Handler) apiRouting() {
-	r := h.router.PathPrefix(APIPrefix).Subrouter()
+	sub := h.router.PathPrefix(APIPrefix).Subrouter()
 
-	r.Methods(http.MethodPost).
+	sub.Methods(http.MethodPost).
 		Path("/create_presigned_post_url").
 		Handler(h.getChain().Then(_handler{nil, h.createPresignedPostUrlHandler}))
 
 	// Health check
-	r.Methods(http.MethodGet).
+	sub.Methods(http.MethodGet).
 		Path("/health").
 		Handler(h.getChain().Then(_handler{h.healthcheckHandler, nil}))
 
 	// CORS Pre-flight
 
-	r.Methods(http.MethodOptions).
+	sub.Methods(http.MethodOptions).
 		PathPrefix("/").
 		HandlerFunc(h.handlePreflight)
+
+	// Static files
+	h.router.
+		Methods(http.MethodGet).
+		PathPrefix("/").
+		Handler(http.FileServer(http.Dir("static")))
 }
 
 func (h *Handler) handlePreflight(w http.ResponseWriter, r *http.Request) {

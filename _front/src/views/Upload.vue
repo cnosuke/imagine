@@ -94,7 +94,7 @@ export default class extends Vue {
     const t = this.fetchContentType(f.name);
 
     axios
-      .post("//localhost:8888/api/v1/create_presigned_post_url", {
+      .post("/api/v1/create_presigned_post_url", {
         filename: f.name,
         content_type: t,
       })
