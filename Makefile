@@ -28,4 +28,7 @@ copy-static-from-client:
 	rm -r ./static && cp -r ./_front/dist/ ./static
 
 build-docker: build-for-docker build-static copy-static-from-client
-	docker build -t cnosuke/imagine:latest
+	docker build -t cnosuke/imagine:latest .
+
+push-docker: build-docker
+	docker push cnosuke/imagine:latest
