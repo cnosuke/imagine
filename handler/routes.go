@@ -62,9 +62,9 @@ func (h *Handler) createPresignedPostUrlHandler(req *http.Request) (int, interfa
 	)
 
 	if p.Ttl == 0 {
-		presignedPostUrl, err = h.s3.CreatePresignedPostUrl(p.Filename, p.ContentType)
+		presignedPostUrl, err = h.s3.CreatePresignedPostUrl(p.Filename, p.ContentType, p.Prefix)
 	} else {
-		presignedPostUrl, err = h.s3.CreatePresignedPostUrlWithTTL(p.Filename, p.ContentType, p.Ttl)
+		presignedPostUrl, err = h.s3.CreatePresignedPostUrlWithTTL(p.Filename, p.ContentType, p.Prefix, p.Ttl)
 	}
 
 	if err != nil {

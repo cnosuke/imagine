@@ -1,5 +1,15 @@
 <template>
   <div class="upload-container">
+    <h2>S3 Uploader</h2>
+
+    <div class="input-prefix">
+      <el-input
+        placeholder="S3保存時のprefix"
+        class="input-prefix"
+        v-model="s3prefix"
+      ></el-input>
+    </div>
+
     <el-upload
       class="upload-demo"
       drag
@@ -73,6 +83,7 @@ import { Clipboard } from "ts-clipboard";
 export default class extends Vue {
   public fileList: ElUploadInternalFileDetail[] = [];
   public doneList: Array<{ filename: string; s3Key: string; url: string }> = [];
+  public s3prefix: string = "";
 
   constructor() {
     super();
@@ -94,8 +105,9 @@ export default class extends Vue {
     const t = this.fetchContentType(f.name);
 
     axios
-      .post("/api/v1/create_presigned_post_url", {
+      .post("http://localhost:8888/api/v1/create_presigned_post_url", {
         filename: f.name,
+        prefix: this.s3prefix,
         content_type: t,
       })
       .then((res: AxiosResponse) => {
@@ -180,8 +192,12 @@ export default class extends Vue {
 
 <style lang="less" scoped>
 .upload-container {
-  width: 800px;
+  width: 640px;
   margin: 0 auto;
+}
+
+.input-prefix {
+  margin: 20px 0;
 }
 
 .upload-button {

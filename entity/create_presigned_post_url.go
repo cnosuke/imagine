@@ -6,6 +6,7 @@ type CreatePresignedPostUrlParams struct {
 	Filename    string        `json:"filename"`
 	ContentType string        `json:"content_type"`
 	Ttl         time.Duration `json:"ttl"`
+	Prefix      string        `json:"prefix"`
 }
 
 type PresignedPostUrl struct {

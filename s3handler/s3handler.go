@@ -35,14 +35,19 @@ func NewS3Handler(ctx context.Context, awsRegion string, bucket string, keyPrefi
 	}
 }
 
-func (s *S3Handler) CreatePresignedPostUrl(filename string, contentType string) (*entity.PresignedPostUrl, error) {
-	return s.CreatePresignedPostUrlWithTTL(filename, contentType, s.defaultPresignedTTL)
+func (s *S3Handler) CreatePresignedPostUrl(filename string, contentType string, prefix string) (*entity.PresignedPostUrl, error) {
+	return s.CreatePresignedPostUrlWithTTL(filename, contentType, prefix, s.defaultPresignedTTL)
 }
 
-func (s *S3Handler) CreatePresignedPostUrlWithTTL(filename string, contentType string, ttl time.Duration) (*entity.PresignedPostUrl, error) {
+func (s *S3Handler) CreatePresignedPostUrlWithTTL(filename string, contentType string, prefix string, ttl time.Duration) (*entity.PresignedPostUrl, error) {
 	id := uuid.NewV4().String()
 
-	key := filepath.Join(s.keyPrefix, id, filename)
+	var key string
+	if len(prefix) > 0 {
+		key = filepath.Join(s.keyPrefix, prefix, id, filename)
+	} else {
+		key = filepath.Join(s.keyPrefix, id, filename)
+	}
 
 	req, _ := s.svc.PutObjectRequest(&s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
